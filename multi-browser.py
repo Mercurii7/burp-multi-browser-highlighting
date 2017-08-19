@@ -21,13 +21,13 @@ class BurpExtender(IBurpExtender,IProxyListener, IContextMenuFactory,ActionListe
 
 		self.stdout = PrintWriter(callbacks.getStdout(), True)
 
-		# Keep Track of Browsers
-		self._browser={}
-		# Colors for different browsers
+		# Keep Track of Browsers & Listening Interfaces
+		self._browser_interface={}
+		# Colors for different interfaces
 		self.colors=["red", "pink", "green","magenta","cyan", "gray", "yellow"]
  
 		
-		self._callbacks.setExtensionName("Multi-Browser Highlighting")
+		self._callbacks.setExtensionName("Multi-Browser Highlighting (w/ Listening Interfaces)")
 		self.isEnabled=False
 		
 		#IExtensionHelpers helpers = callbacks.getHelpers()
@@ -41,19 +41,25 @@ class BurpExtender(IBurpExtender,IProxyListener, IContextMenuFactory,ActionListe
 		#	self._stdout.println(("Proxy request to " if messageIsRequest else "Proxy response from ") + message.getMessageInfo().getHttpService().toString())
 		if messageIsRequest == False:
 			return
+
 		browser_agent=None
+		listening_interface=None
+
 		headers=self._helpers.analyzeRequest(message.getMessageInfo()).getHeaders()
 		for x in headers:
 			if x.lower().startswith("user-agent:"):
 				browser_agent=x
 				break
+		
+		listening_interface = message.getListenerInterface()
 
-		if browser_agent not in self._browser:
-			self._browser[browser_agent]={"id":len(self._browser)+1, "agent":browser_agent, "color":self.colors.pop()}
+		browser_interface = browser_agent + '|' + listening_interface
 
+		if browser_interface not in self._browser_interface:
+			self._browser_interface[browser_interface]={"id":len(self._browser_interface)+1, "agent":browser_agent, "interface":listening_interface, "color":self.colors.pop()}
 
-		self.stdout.println(self._browser[browser_agent]["agent"])
-		message.getMessageInfo().setHighlight(self._browser[browser_agent]["color"])
+		self.stdout.println(self._browser_interface[browser_interface]["agent"] + '|' + self._browser_interface[browser_interface]["interface"])
+		message.getMessageInfo().setHighlight(self._browser_interface[browser_interface]["color"])
 
 	def createMenuItems(self, invocation):
 		if invocation.getInvocationContext() == invocation.CONTEXT_PROXY_HISTORY:
